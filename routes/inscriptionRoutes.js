@@ -9,13 +9,15 @@ router.post("/", async (req, res) => {
   if (!nom || !prenom || !photo || !age || !moyenPaiement || !email) {
     return res
       .status(400)
-      .json({ error: "Tous les champs obligatoires doivent être remplis." });
+      .json({ error: "Tous les champs doivent être remplis." });
   }
 
   // Vérifier que l'email est valide
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return res.status(400).json({ error: "Adresse email invalide." });
+    return res
+      .status(400)
+      .json({ error: "Veuillez entrez une adresse mail valide." });
   }
 
   // Vérifier que l'âge est un nombre positif
