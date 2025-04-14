@@ -3,8 +3,15 @@ const router = express.Router();
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const {
+  validateName,
+  validateAge,
+  validateEmail,
+  validatePaymentMethod,
+  validatePhoto,
+  validateCaptcha,
+  validateRequiredFields,
+} = require("../utils/validations");
 
 // Cache pour stocker les derniers envois
 const lastSubmissionCache = {};
@@ -29,7 +36,7 @@ const canSubmit = (email) => {
   if (!lastSubmission) return true;
 
   const now = Date.now();
-  const fiveMinutes = 5 * 60 * 1000; // 5 minutes
+  const fiveMinutes = 5 * 60 * 1000; // 5 minutes en millisecondes
   return now - lastSubmission >= fiveMinutes;
 };
 
@@ -37,7 +44,6 @@ router.post("/", upload.single("photo"), async (req, res) => {
   try {
     const { nom, prenom, age, moyenPaiement, email, captchaToken } = req.body;
     const photo = req.file;
-    const moyensPaiementValides = ["Carte bancaire", "Espèce"];
 
     // Vérification du délai entre les soumissions
     if (!canSubmit(email)) {
@@ -51,70 +57,54 @@ router.post("/", upload.single("photo"), async (req, res) => {
       });
     }
 
-    // Vérification que le reCAPTCHA est bien fourni
-    if (!captchaToken) {
-      return res.status(400).json({ error: "CAPTCHA manquant." });
-    }
-
-    // Vérification du reCAPTCHA avec Google
-    const captchaSecret = process.env.RECAPTCHA_SECRET;
-    const captchaVerifyURL = "https://www.google.com/recaptcha/api/siteverify";
-
-    try {
-      const captchaResponse = await axios.post(captchaVerifyURL, null, {
-        params: {
-          secret: captchaSecret,
-          response: captchaToken,
-        },
-      });
-
-      if (!captchaResponse.data.success) {
-        return res.status(400).json({ error: "CAPTCHA invalide." });
-      }
-    } catch (error) {
-      // console.error("Erreur lors de la vérification du CAPTCHA :", error);
-      return res
-        .status(500)
-        .json({ error: "Erreur de vérification du CAPTCHA." });
-    }
-
     // Validation des champs obligatoires
-    if (!nom || !prenom || !photo || !age || !moyenPaiement || !email) {
+    if (!validateRequiredFields({ nom, prenom, age, moyenPaiement, email })) {
       return res
         .status(400)
         .json({ error: "Tous les champs doivent être remplis." });
     }
 
+    // Validation de la photo
+    if (!validatePhoto(photo)) {
+      return res.status(400).json({
+        error:
+          "La photo est invalide. Format accepté : JPG, JPEG, PNG. Taille maximale : 5MB.",
+      });
+    }
+
+    // Validation du CAPTCHA
+    if (!(await validateCaptcha(captchaToken))) {
+      return res.status(400).json({ error: "CAPTCHA invalide." });
+    }
+
     // Validation de la longueur du nom et prénom
-    if (nom.length < 3 || nom.length > 50) {
+    if (!validateName(nom)) {
       return res
         .status(400)
         .json({ error: "Le nom doit contenir entre 3 et 50 caractères." });
     }
 
-    if (prenom.length < 3 || prenom.length > 50) {
+    if (!validateName(prenom)) {
       return res
         .status(400)
         .json({ error: "Le prénom doit contenir entre 3 et 50 caractères." });
     }
 
     // Validation de l'âge
-    const ageNum = parseInt(age);
-    if (isNaN(ageNum) || ageNum < 16 || ageNum > 100) {
+    if (!validateAge(age)) {
       return res
         .status(400)
         .json({ error: "L'âge doit être compris entre 16 et 100 ans." });
     }
 
     // Validation de l'email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!validateEmail(email)) {
       return res
         .status(400)
         .json({ error: "Veuillez entrer une adresse email valide." });
     }
 
-    if (!moyensPaiementValides.includes(moyenPaiement)) {
+    if (!validatePaymentMethod(moyenPaiement)) {
       return res.status(400).json({ error: "Moyen de paiement invalide." });
     }
 
@@ -184,28 +174,19 @@ router.post("/", upload.single("photo"), async (req, res) => {
     };
 
     try {
-      // console.log("Tentative d'envoi d'email avec pièce jointe...");
-      // console.log("Type MIME:", photo.mimetype);
-      // console.log("Taille du buffer:", photo.buffer.length);
-
       await transporter.sendMail(mailOptionsClub);
-      // console.log("Email envoyé au club avec succès !");
-
       await transporter.sendMail(mailOptionsMembre);
-      // console.log("Email envoyé au membre avec succès !");
 
       // Mise à jour du cache après un envoi réussi
       lastSubmissionCache[email] = Date.now();
 
       res.status(200).json({ message: "Inscription envoyée avec succès !" });
     } catch (error) {
-      // console.error("Erreur lors de l'envoi du mail :", error);
       return res
         .status(500)
         .json({ error: "Erreur lors de l'envoi de l'inscription." });
     }
   } catch (error) {
-    // console.error("Erreur générale :", error);
     return res.status(500).json({
       error: "Une erreur est survenue lors du traitement de votre demande.",
     });
