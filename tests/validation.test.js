@@ -32,7 +32,7 @@ describe("Validation des champs du formulaire", () => {
     });
 
     test("devrait rejeter un âge trop jeune", () => {
-      expect(validateAge("15")).toBe(false);
+      expect(validateAge("7")).toBe(false);
     });
 
     test("devrait rejeter un âge trop vieux", () => {

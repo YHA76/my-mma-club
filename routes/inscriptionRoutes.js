@@ -94,7 +94,7 @@ router.post("/", upload.single("photo"), async (req, res) => {
     if (!validateAge(age)) {
       return res
         .status(400)
-        .json({ error: "L'âge doit être compris entre 16 et 100 ans." });
+        .json({ error: "L'âge doit être compris entre 8 et 100 ans." });
     }
 
     // Validation de l'email

@@ -8,7 +8,7 @@ const validateName = (name) => {
 // Validation de l'âge
 const validateAge = (age) => {
   const ageNum = parseInt(age);
-  return !isNaN(ageNum) && ageNum >= 16 && ageNum <= 100;
+  return !isNaN(ageNum) && ageNum >= 8 && ageNum <= 100;
 };
 
 // Validation de l'email
