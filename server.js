@@ -23,7 +23,7 @@ app.use(limiter); // Limite le nombre de requêtes
 
 // Route de test
 app.get("/", (req, res) => {
-  res.send("Serveur est opérationnel !");
+  res.send("Serveur my-mma-club opérationnel !");
 });
 
 // Démarrage du serveur

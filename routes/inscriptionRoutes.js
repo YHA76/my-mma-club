@@ -36,7 +36,7 @@ const canSubmit = (email) => {
   if (!lastSubmission) return true;
 
   const now = Date.now();
-  const fiveMinutes = 5 * 60 * 1000; // 5 minutes en millisecondes
+  const fiveMinutes = 5 * 60 * 1000; // 5 minutes
   return now - lastSubmission >= fiveMinutes;
 };
 
@@ -174,19 +174,28 @@ router.post("/", upload.single("photo"), async (req, res) => {
     };
 
     try {
+      // console.log("Tentative d'envoi d'email avec pièce jointe...");
+      // console.log("Type MIME:", photo.mimetype);
+      // console.log("Taille du buffer:", photo.buffer.length);
+
       await transporter.sendMail(mailOptionsClub);
+      // console.log("Email envoyé au club avec succès !");
+
       await transporter.sendMail(mailOptionsMembre);
+      // console.log("Email envoyé au membre avec succès !");
 
       // Mise à jour du cache après un envoi réussi
       lastSubmissionCache[email] = Date.now();
 
       res.status(200).json({ message: "Inscription envoyée avec succès !" });
     } catch (error) {
+      // console.error("Erreur lors de l'envoi de l'email:", error);
       return res
         .status(500)
         .json({ error: "Erreur lors de l'envoi de l'inscription." });
     }
   } catch (error) {
+    // console.error("Erreur dans le traitement de la requête:", error);
     return res.status(500).json({
       error: "Une erreur est survenue lors du traitement de votre demande.",
     });
