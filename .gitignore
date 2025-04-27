@@ -7,9 +7,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Test coverage
-coverage/
-
 # Dossiers de build
 dist/
 build/
